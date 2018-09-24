@@ -32,18 +32,18 @@ const Encoding = require('../node_modules/encoding-japanese');
     await page.goto('https://liginc.co.jp/blog/', 'domcontentloaded')
     await page.waitFor(1000)
 
-    let articles = []
-    await scrapeTopListPage(page, articles)
-    await scrapeListPage(page, articles)
+    let output = []
+    await scrapeTopListPage(page, output)
+    // await scrapeListPage(page, output)
 
     // ブラウザを終了する
-    console.log(articles)
-    exportCsvFile(articles)
+    // console.log(output)
+    exportCsvFile(output)
     await browser.close();
 
 })();
 
-async function scrapeTopListPage(page, articles) {
+async function scrapeTopListPage(page, output) {
     console.log(`scrapeTopListPage`)
     // TOPページで最新記事を取得
     if (await hasArticleCombined(page)) {
@@ -72,7 +72,8 @@ async function scrapeTopListPage(page, articles) {
             ])
 
             // 詳細ページを解析する
-            articles.push(await scrapeDetailPage(page, article))
+            article.push(await scrapeDetailPage(page, article))
+            output.push(article)
 
             // TOPページに戻る
             await page.goBack(1000)
@@ -142,7 +143,8 @@ async function scrapeTopListPage(page, articles) {
         ])
 
         // 詳細ページを解析する
-        articles.push(await scrapeDetailPage(page, article))
+        article.push(await scrapeDetailPage(page, article))
+        output.push(article)
 
         // 一覧ページに戻る
         await page.goBack(1000)
@@ -150,16 +152,17 @@ async function scrapeTopListPage(page, articles) {
     }
 
     // 次のページに遷移する
-    await Promise.all([
-        page.click('div.l-pagenation > div.l-pagenation-more > a'),
-        page.waitForNavigation()
-    ])
+    return
+    // await Promise.all([
+    //     page.click('div.l-pagenation > div.l-pagenation-more > a'),
+    //     page.waitForNavigation()
+    // ])
 
 }
 
 
 // TODO: トップページと下層ページの構造が違い過ぎるのでメソッドを分けたほうがいい
-async function scrapeListPage(page, articles) {
+async function scrapeListPage(page, output) {
     console.log(`scrapeListPage`)
     let articleListIndex = 1
     let laterFlg = false
@@ -200,7 +203,8 @@ async function scrapeListPage(page, articles) {
         ])
 
         // 詳細ページを解析する
-        articles.push(await scrapeDetailPage(page, article))
+        article.push(await scrapeDetailPage(page, article))
+        output.push(article)
 
         // 一覧ページに戻る
         await page.goBack(1000)
@@ -216,7 +220,7 @@ async function scrapeListPage(page, articles) {
             nextLink.click(),
             page.waitForNavigation()
         ])
-        await scrapeListPage(page, articles)
+        await scrapeListPage(page, output)
         return
     }
 
@@ -253,13 +257,13 @@ async function scrapeDetailPage(page, article) {
     ))
 
     // いいね数を取得
-    article.push(await getFacebookGoodNum(page))
+    // article.push(await getFacebookGoodNum(page))
 
     // ツイート数を取得
-    article.push(await getTwitterFavNum(page))
+    // article.push(await getTwitterFavNum(page))
 
     // ブックマーク数を取得
-    article.push(await getBookmarkNum(page))
+    // article.push(await getBookmarkNum(page))
 
     console.log(article)
     return article
@@ -343,9 +347,9 @@ async function getBookmarkNum(page) {
     return bookmarkNum
 }
 
-function exportCsvFile(articles) {
+function exportCsvFile(output) {
     // 文字列をShift_JISに変換する
-    const sjisBytes = Encoding.convert(articles, {
+    const sjisBytes = Encoding.convert(output, {
         from: 'UNICODE',
         to: 'SJIS',
         type: 'arraybuffer',
