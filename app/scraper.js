@@ -22,35 +22,48 @@ const iconv = require("iconv-lite");
     });
 
     const browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: ["--lang=ja,en-US,en"]
     });
     const page = await browser.newPage();
 
-    // Ligのページに飛ぶ
+    // スクレイピング先に遷移
     await page.goto("https://liginc.co.jp/blog/", {
         waitUntil: "networkidle2"
     });
     await page.waitFor(1000);
 
     let output = [];
-    await scrapeTopListPage(page, output);
-    await scrapeListPage(page, output);
+    try {
+        await scrapeTopListPage(page, output);
+        await scrapeListPage(page, output);
 
-    // ブラウザを終了する
-    console.log(output);
-    exportCsvFile(output);
-    await browser.close();
+    } catch (e) {
+        console.error(e);
+
+    } finally {
+        // csv出力する
+        console.log(output);
+        exportCsvFile(output);
+
+        // ブラウザを終了する
+        await browser.close();
+
+    }
 })();
 
+
+// トップページの記事を取得する
 async function scrapeTopListPage(page, output) {
     console.log(`scrapeTopListPage`);
+    console.log(await page.url()); // スクレイピングURLを出力
     // TOPページで最新記事を取得
     if (await hasArticleCombined(page)) {
         console.log("TOPページで最新記事を取得");
         for (
             let articleCombinedNum = 1; articleCombinedNum <= 2; articleCombinedNum++
         ) {
+            // TODO: 何度も登場するのでarticleクラスを作る？
             let article = {
                 title: null,
                 url: null,
@@ -69,8 +82,8 @@ async function scrapeTopListPage(page, output) {
                 el => el.innerText
             );
 
-            // 3秒待って記事をクリック
-            await page.waitFor(1500);
+            // 1秒待って記事をクリック
+            await page.waitFor(1000);
             await page.click(
                 `div.articlecombined > article:nth-child(${articleCombinedNum}) > a > div.articlecombined-content > h2`
             );
@@ -84,9 +97,9 @@ async function scrapeTopListPage(page, output) {
         }
     }
 
-    let articleListIndex = 1;
-    let laterFlg = false;
-    console.log("TOPページで記事を取得");
+    let articleListIndex = 1; // 記事の位置を保存
+    let laterFlg = false; // 前半後半を判定
+    console.log("TOPページの他の記事を取得");
     while (1) {
         let existArtcile = null;
         let existArtcilePath = null;
@@ -105,42 +118,40 @@ async function scrapeTopListPage(page, output) {
         // TODO:この辺りのフラグ管理が地獄なのでメソッドに切り分けたい
         // 前半の場合
         if (laterFlg === false) {
-            existArtcile = await page.$(
-                `div.l-content-main.l-content-margin-blogtop > div:nth-child(3) > article:nth-child(${articleListIndex})`
-            );
-            existArtcilePath = `div.l-content-main.l-content-margin-blogtop > div:nth-child(3) > article:nth-child(${articleListIndex})`;
-            console.log("前半の場合");
+            // 記事の位置を取得する
+            existArtcilePath =
+                `div.l-content-main.l-content-margin-blogtop > div:nth-child(3) > article:nth-child(${articleListIndex})`;
+            existArtcile = await page.$(existArtcilePath);
+            console.log("前半の記事を確認するよ");
         }
 
         // 前半かつ記事が存在する場合
         if (existArtcile && laterFlg === false) {
             // like数カウント
             article.ligLikeCount = await page.$eval(
-                `div.l-content-main.l-content-margin-blogtop > div:nth-child(3) > article:nth-child(${articleListIndex}) > a > div.articlelist-content > div > div.like > span.like-counter`,
+                `${existArtcilePath} > a > div.articlelist-content > div > div.like > span.like-counter`,
                 el => el.innerText
             );
-            console.log("前半かつ記事が存在する場合");
+            console.log("前半の記事が存在するよ");
         }
 
         // 後半の場合
         if (laterFlg === true) {
-            existArtcile = await page.$(
-                `div.l-content-main.l-content-margin-blogtop > div:nth-child(5) > article:nth-child(${articleListIndex})`
-            );
+            // 記事の位置を変更する
             existArtcilePath =
                 `div.l-content-main.l-content-margin-blogtop > div:nth-child(5) > article:nth-child(${articleListIndex})`;
-
-            console.log("後半の場合");
+            existArtcile = await page.$(existArtcilePath);
+            console.log("後半の記事を確認するよ");
         }
 
         // 後半かつ記事が存在する場合
         if (existArtcile && laterFlg === true) {
             // like数カウント
             article.ligLikeCount = await page.$eval(
-                `div.l-content-main.l-content-margin-blogtop > div:nth-child(5) > article:nth-child(${articleListIndex}) > a > div.articlelist-content > div > div.like > span.like-counter`,
+                `${existArtcilePath} > a > div.articlelist-content > div > div.like > span.like-counter`,
                 el => el.innerText
             );
-            console.log("後半かつ記事が存在する場合");
+            console.log("後半の事が存在するよ");
         }
 
         // 後半記事まで到達していない場合
@@ -157,8 +168,8 @@ async function scrapeTopListPage(page, output) {
             break;
         }
 
-        // ページを見込みを待って記事をクリックする
-        await page.waitFor(1500);
+        // 1秒待って記事をクリックする
+        await page.waitFor(1000);
         await page.click(existArtcilePath);
 
         // 詳細ページを解析する
@@ -169,20 +180,19 @@ async function scrapeTopListPage(page, output) {
         await page.goBack(1000);
         articleListIndex++;
     }
-    // ページ数を出力
-    console.log(await page.$eval(
-        `div.l-pagenation > div.pagenation > div.pagenation-select.js-pagenation-select > select > option:nth-child(1)`,
-        el => el.innerText
-    ));
+
     // ページを見込みを待って次のページに遷移する
-    await page.waitFor(1500);
+    console.log('ページ遷移します');
+    await page.waitFor(1000);
     await page.click("div.l-pagenation > div.l-pagenation-more > a");
 }
 
+// 下層の記事を取得する
 async function scrapeListPage(page, output) {
     console.log(`scrapeListPage`);
-    let articleListIndex = 1;
-    let laterFlg = false;
+    let articleListIndex = 1; // 記事の位置を保存
+    let laterFlg = false; // 前半後半を判定
+    console.log(await page.url()); // スクレイピングURLを出力
     while (1) {
         let article = {
             title: null,
@@ -196,37 +206,36 @@ async function scrapeListPage(page, output) {
             hatenaBCount: null
         };
 
-        let existArtcile = await page.$(
-            `div.l-content-main.l-content-main-archive > div.articlelist > article:nth-child(${articleListIndex})`
-        );
-        let existArtcilePath =
-            `div.l-content-main.l-content-main-archive > div.articlelist > article:nth-child(${articleListIndex}`;
+        const existArtcilePath =
+            `div.l-content-main.l-content-main-archive > div.articlelist > article:nth-child(${articleListIndex})`;
+        await page.waitFor(1000)
+        let existArtcile = await page.$(existArtcilePath);
 
         if (existArtcile) {
             // like数カウント
             article.ligLikeCount = await page.$eval(
-                `div.articlelist > article:nth-child(${articleListIndex}) > a > div.articlelist-content > div > div.like > span.like-counter`,
+                `${existArtcilePath} > a > div.articlelist-content > div > div.like > span.like-counter`,
                 el => el.innerText
             );
         }
-
-        // 後半記事まで到達していない場合
+        // 前半記事を読み切った場合
         if (!existArtcile && !laterFlg) {
-            console.log("後半記事まで到達していない場合");
-            articleListIndex++;
+            console.log("前半記事を読みきったよ！これから後半記事を読みます");
+            articleListIndex++; // 広告が挟まるのでindexを1つ飛ばす
             laterFlg = true;
             continue;
         }
 
-        // すべての記事を読み切った場合
+        // 後半記事を読み切った場合
         if (!existArtcile && laterFlg) {
-            console.log("すべての記事を読み切ったよ");
+            console.log("すべての記事を読みました。");
             break;
         }
 
-        // 3秒待つ
-        await page.waitFor(1500);
+        // 1秒待って記事をクリックする
+        await page.waitFor(1000);
         await page.click(existArtcilePath);
+        console.log(`1秒待って記事をクリックする`)
 
         // 詳細ページを解析する
         await scrapeDetailPage(page, article);
@@ -242,18 +251,21 @@ async function scrapeListPage(page, output) {
     let nextLink = await page.$("div.l-pagenation > div.l-pagenation-more > a");
     if (nextLink) {
         console.log("存在する場合、ページに遷移");
-        await page.waitFor(1500);
+        await page.waitFor(1000);
         await page.click("div.l-pagenation > div.l-pagenation-more > a")
         await scrapeListPage(page, output);
         return;
     }
 }
 
+// TOPページの最新記事かどうか確認する
 async function hasArticleCombined(page) {
     return (await page.$("div.articlecombined")) ? true : false;
 }
 
+// 詳細ページを解析する
 async function scrapeDetailPage(page, article) {
+    console.log('scrapeDetailPage');
     // ページタイトルを取得
     article.title = await page.title();
 
@@ -289,6 +301,7 @@ async function scrapeDetailPage(page, article) {
     return;
 }
 
+// Facebookのいいね数を取得する
 async function getFacebookGoodNum(page) {
     await page.waitFor(1000);
     await page.waitForSelector(
@@ -309,12 +322,13 @@ async function getFacebookGoodNum(page) {
     // いいね数を取得
     const goodNum = await page.$eval(`span#u_0_1`, el => el.innerText);
 
-    // 一覧ページに戻る
+    // 記事に戻る
     await page.goBack(1000);
 
     return goodNum;
 }
 
+// Twitterのツイート数を取得する
 async function getTwitterFavNum(page) {
     await page.waitFor(1000);
     await page.waitForSelector(
@@ -334,12 +348,13 @@ async function getTwitterFavNum(page) {
     // つぶやき数を取得
     const favNum = await page.$eval(`a#count`, el => el.innerText);
 
-    // 一覧ページに戻る
+    // 記事に戻る
     await page.goBack(1000);
 
     return favNum;
 }
 
+// はてなブックマークのブックマーク数を取得する
 async function getBookmarkNum(page) {
     await page.waitFor(1000);
 
@@ -347,17 +362,18 @@ async function getBookmarkNum(page) {
     let articleUrl = await page.url();
     articleUrl = articleUrl.replace("https://", "");
 
-    // はてブのブクマページに遷移
+    // はてブの詳細ページに遷移
     await page.goto(`http://b.hatena.ne.jp/entry/s/${articleUrl}`, {
         waitUntil: "networkidle2"
     });
 
-    // ブックマーク数を取得
+    // ブックマークがされていない場合は戻る
     if (await page.$(`#container > div > div > h2`)) {
         await page.goBack(1000);
         return 0;
     }
 
+    // ブックマーク数を取得
     const bookmarkNum = await page.$eval(
         `span.entry-info-users > a > span`,
         el => el.innerText
@@ -369,6 +385,7 @@ async function getBookmarkNum(page) {
     return bookmarkNum;
 }
 
+// CSVファイルを出力する
 function exportCsvFile(input) {
     // ヘッダーを設定
     const columns = {
@@ -391,4 +408,5 @@ function exportCsvFile(input) {
         buf = iconv.encode(output, 'shift-jis');
         fs.writeFileSync('output.csv', buf);
     });
+    console.log('取得した記事をcsv出力しました')
 }
