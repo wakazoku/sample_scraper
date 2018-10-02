@@ -280,9 +280,11 @@ async function scrapeDetailPage(page, article) {
     );
 
     // 投稿者を取得
+    await page.waitForSelector(`span.author-name`)
     article.author = await page.$eval(`span.author-name`, el => el.innerText);
 
     // カテゴリを取得
+    await page.waitForSelector(`div.single-header-content-labels`)
     article.categories = await page.$eval(
         `div.single-header-content-labels`,
         el => el.innerText
@@ -374,6 +376,7 @@ async function getBookmarkNum(page) {
     }
 
     // ブックマーク数を取得
+    await page.waitForSelector(`span.entry-info-users > a > span`)
     const bookmarkNum = await page.$eval(
         `span.entry-info-users > a > span`,
         el => el.innerText
