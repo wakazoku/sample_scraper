@@ -280,15 +280,15 @@ async function scrapeDetailPage(page, article) {
     );
 
     // 投稿者を取得
-    await page.waitForSelector(`span.author-name`)
     article.author = await page.$eval(`span.author-name`, el => el.innerText);
 
-    // カテゴリを取得
-    await page.waitForSelector(`div.single-header-content-labels`)
-    article.categories = await page.$eval(
-        `div.single-header-content-labels`,
-        el => el.innerText
-    );
+    // PR記事はカテゴリが存在しない
+    if (await page.$('div.single-header-content-labels')) {
+        article.categories = await page.$eval( // カテゴリを取得
+            `div.single-header-content-labels`,
+            el => el.innerText
+        );
+    }
 
     // いいね数を取得
     article.fbLikeCount = await getFacebookGoodNum(page);
@@ -333,9 +333,6 @@ async function getFacebookGoodNum(page) {
 // Twitterのツイート数を取得する
 async function getTwitterFavNum(page) {
     await page.waitFor(1000);
-    await page.waitForSelector(
-        'li.single-footer-share-item.single-footer-share-item-twitter > iframe'
-    );
     // twitterのshareボタンのIframeのsrc属性を取得
     const twitterIframeURL = await page.$eval(
         `li.single-footer-share-item.single-footer-share-item-twitter > iframe`,
