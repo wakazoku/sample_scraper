@@ -26,6 +26,7 @@ const iconv = require("iconv-lite");
         args: ["--lang=ja,en-US,en"]
     });
     const page = await browser.newPage();
+    page.setDefaultNavigationTimeout(180000); // 不安定なのでたっぷり3分間タイムアウトを待つ
 
     // スクレイピング先に遷移
     await page.goto("https://liginc.co.jp/blog/", {
@@ -43,7 +44,6 @@ const iconv = require("iconv-lite");
 
     } finally {
         // csv出力する
-        console.log(output);
         exportCsvFile(output);
 
         // ブラウザを終了する
@@ -282,12 +282,15 @@ async function scrapeDetailPage(page, article) {
     // 投稿者を取得
     article.author = await page.$eval(`span.author-name`, el => el.innerText);
 
-    // PR記事はカテゴリが存在しない
+    let categories = null
+    // カテゴリが存在しないことも稀にある
     if (await page.$('div.single-header-content-labels')) {
-        article.categories = await page.$eval( // カテゴリを取得
+        categories = await page.$eval( // カテゴリを取得
             `div.single-header-content-labels`,
             el => el.innerText
         );
+        // 改行コードをセミコロンに置き換える
+        article.categories = categories.replace(/\n/g, ';');
     }
 
     // いいね数を取得
