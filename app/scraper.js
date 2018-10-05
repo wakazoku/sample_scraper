@@ -84,9 +84,14 @@ async function scrapeTopListPage(page, output) {
 
             // 1秒待って記事をクリック
             await page.waitFor(1000);
-            await page.click(
-                `div.articlecombined > article:nth-child(${articleCombinedNum}) > a > div.articlecombined-content > h2`
-            );
+            await Promise.all([
+                page.waitForNavigation({
+                    waitUntil: "domcontentloaded"
+                }),
+                page.click(
+                    `div.articlecombined > article:nth-child(${articleCombinedNum}) > a > div.articlecombined-content > h2`
+                )
+            ])
 
             // 詳細ページを解析する
             await scrapeDetailPage(page, article);
@@ -170,7 +175,13 @@ async function scrapeTopListPage(page, output) {
 
         // 1秒待って記事をクリックする
         await page.waitFor(1000);
-        await page.click(existArtcilePath);
+        await Promise.all([
+            page.waitForNavigation({
+                waitUntil: "domcontentloaded"
+            }),
+            page.click(existArtcilePath)
+
+        ])
 
         // 詳細ページを解析する
         await scrapeDetailPage(page, article);
@@ -184,7 +195,12 @@ async function scrapeTopListPage(page, output) {
     // ページを見込みを待って次のページに遷移する
     console.log('ページ遷移します');
     await page.waitFor(1000);
-    await page.click("div.l-pagenation > div.l-pagenation-more > a");
+    await Promise.all([
+        page.waitForNavigation({
+            waitUntil: "domcontentloaded"
+        }),
+        page.click("div.l-pagenation > div.l-pagenation-more > a")
+    ])
 }
 
 // 下層の記事を取得する
@@ -234,7 +250,12 @@ async function scrapeListPage(page, output) {
 
         // 1秒待って記事をクリックする
         await page.waitFor(1000);
-        await page.click(existArtcilePath);
+        await Promise.all([
+            page.waitForNavigation({
+                waitUntil: "domcontentloaded"
+            }),
+            page.click(existArtcilePath)
+        ])
         console.log(`1秒待って記事をクリックする`)
 
         // 詳細ページを解析する
@@ -247,12 +268,16 @@ async function scrapeListPage(page, output) {
     }
 
     // 次のページを確認する
-    await page.waitFor(1000);
     let nextLink = await page.$("div.l-pagenation > div.l-pagenation-more > a");
     if (nextLink) {
         console.log("存在する場合、ページに遷移");
         await page.waitFor(1000);
-        await page.click("div.l-pagenation > div.l-pagenation-more > a")
+        await Promise.all([
+            page.waitForNavigation({
+                waitUntil: "domcontentloaded"
+            }),
+            page.click("div.l-pagenation > div.l-pagenation-more > a")
+        ])
         await scrapeListPage(page, output);
         return;
     }
@@ -273,13 +298,20 @@ async function scrapeDetailPage(page, article) {
     article.url = await page.url();
 
     // 投稿日を取得
-    await page.waitForSelector(`div.single-header-content-date`);
+    await page.waitForSelector(
+        `div.single-header-content-date`, {
+            visible: true
+        });
     article.postDate = await page.$eval(
         `div.single-header-content-date`,
         el => el.innerText
     );
 
     // 投稿者を取得
+    await page.waitForSelector(
+        `span.author-name`, {
+            visible: true
+        });
     article.author = await page.$eval(`span.author-name`, el => el.innerText);
 
     let categories = null
@@ -309,11 +341,12 @@ async function scrapeDetailPage(page, article) {
 // Facebookのいいね数を取得する
 async function getFacebookGoodNum(page) {
     await page.waitFor(1000);
-    await page.waitForSelector(
-        'div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe'
-    );
 
     // facebookのshareボタンのIframeのsrc属性を取得
+    await page.waitForSelector(
+        'div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe', {
+            visible: true
+        });
     const facebookIframeURL = await page.$eval(
         `div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe`,
         el => el.src
@@ -325,6 +358,10 @@ async function getFacebookGoodNum(page) {
     });
 
     // いいね数を取得
+    await page.waitForSelector(
+        `span#u_0_1`, {
+            visible: true
+        });
     const goodNum = await page.$eval(`span#u_0_1`, el => el.innerText);
 
     // 記事に戻る
@@ -337,6 +374,10 @@ async function getFacebookGoodNum(page) {
 async function getTwitterFavNum(page) {
     await page.waitFor(1000);
     // twitterのshareボタンのIframeのsrc属性を取得
+    await page.waitForSelector(
+        `li.single-footer-share-item.single-footer-share-item-twitter > iframe`, {
+            visible: true
+        });
     const twitterIframeURL = await page.$eval(
         `li.single-footer-share-item.single-footer-share-item-twitter > iframe`,
         el => el.src
@@ -348,6 +389,10 @@ async function getTwitterFavNum(page) {
     });
 
     // つぶやき数を取得
+    await page.waitForSelector(
+        `a#count`, {
+            visible: true
+        });
     const favNum = await page.$eval(`a#count`, el => el.innerText);
 
     // 記事に戻る
@@ -376,7 +421,10 @@ async function getBookmarkNum(page) {
     }
 
     // ブックマーク数を取得
-    await page.waitForSelector(`span.entry-info-users > a > span`)
+    await page.waitForSelector(
+        `span.entry-info-users > a > span`, {
+            visible: true
+        });
     const bookmarkNum = await page.$eval(
         `span.entry-info-users > a > span`,
         el => el.innerText
