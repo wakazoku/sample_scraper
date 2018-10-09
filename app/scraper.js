@@ -2,6 +2,7 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 const csv = require("csv");
 const iconv = require("iconv-lite");
+const axios = require('axios');
 
 (async () => {
     // キャッチされない例外の処理
@@ -314,7 +315,7 @@ async function scrapeDetailPage(page, article) {
         });
     article.author = await page.$eval(`span.author-name`, el => el.innerText);
 
-    let categories = null
+    let categories = null;
     // カテゴリが存在しないことも稀にある
     if (await page.$('div.single-header-content-labels')) {
         categories = await page.$eval( // カテゴリを取得
@@ -404,36 +405,22 @@ async function getTwitterFavNum(page) {
 // はてなブックマークのブックマーク数を取得する
 async function getBookmarkNum(page) {
     await page.waitFor(1000);
-
     // 記事のURLを取得する
-    let articleUrl = await page.url();
-    articleUrl = articleUrl.replace("https://", "");
+    const articleUrl = await page.url();
 
-    // はてブの詳細ページに遷移
-    await page.goto(`http://b.hatena.ne.jp/entry/s/${articleUrl}`, {
-        waitUntil: "networkidle2"
-    });
+    try {
+        // はてなブックマーク件数取得APIを呼び出す
+        // http://developer.hatena.ne.jp/ja/documents/bookmark/apis/getcount
+        const res = await axios.get(`http://api.b.st-hatena.com/entry.total_count?url=${articleUrl}`);
+        return res.data.total_bookmarks;
+    } catch (error) {
+        console.error(error);
+        return -1
 
-    // ブックマークがされていない場合は戻る
-    if (await page.$(`#container > div > div > h2`)) {
-        await page.goBack(1000);
-        return 0;
+
+
+
     }
-
-    // ブックマーク数を取得
-    await page.waitForSelector(
-        `span.entry-info-users > a > span`, {
-            visible: true
-        });
-    const bookmarkNum = await page.$eval(
-        `span.entry-info-users > a > span`,
-        el => el.innerText
-    );
-
-    // 記事に戻る
-    await page.goBack(1000);
-
-    return bookmarkNum;
 }
 
 // CSVファイルを出力する
