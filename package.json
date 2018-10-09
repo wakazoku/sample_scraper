@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/wakazoku/sample_scraper#readme",
   "dependencies": {
+    "axios": "^0.18.0",
     "csv": "^4.0.0",
     "fs": "0.0.1-security",
     "iconv-lite": "^0.4.24",
