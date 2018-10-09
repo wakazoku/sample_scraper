@@ -2,6 +2,7 @@ const puppeteer = require("puppeteer");
 const fs = require("fs");
 const csv = require("csv");
 const iconv = require("iconv-lite");
+const moment = require("moment");
 const axios = require('axios');
 
 (async () => {
@@ -39,20 +40,17 @@ const axios = require('axios');
     try {
         await scrapeTopListPage(page, output);
         await scrapeListPage(page, output);
-
     } catch (e) {
+        conso.error("エラー発生ページ: " + await page.url())
         console.error(e);
-
     } finally {
         // csv出力する
-        exportCsvFile(output);
+        exportCsvFile(output, await page.url());
 
         // ブラウザを終了する
         await browser.close();
-
     }
 })();
-
 
 // トップページの記事を取得する
 async function scrapeTopListPage(page, output) {
@@ -92,7 +90,7 @@ async function scrapeTopListPage(page, output) {
                 page.click(
                     `div.articlecombined > article:nth-child(${articleCombinedNum}) > a > div.articlecombined-content > h2`
                 )
-            ])
+            ]);
 
             // 詳細ページを解析する
             await scrapeDetailPage(page, article);
@@ -125,8 +123,7 @@ async function scrapeTopListPage(page, output) {
         // 前半の場合
         if (laterFlg === false) {
             // 記事の位置を取得する
-            existArtcilePath =
-                `div.l-content-main.l-content-margin-blogtop > div:nth-child(3) > article:nth-child(${articleListIndex})`;
+            existArtcilePath = `div.l-content-main.l-content-margin-blogtop > div:nth-child(3) > article:nth-child(${articleListIndex})`;
             existArtcile = await page.$(existArtcilePath);
             console.log("前半の記事を確認するよ");
         }
@@ -144,8 +141,7 @@ async function scrapeTopListPage(page, output) {
         // 後半の場合
         if (laterFlg === true) {
             // 記事の位置を変更する
-            existArtcilePath =
-                `div.l-content-main.l-content-margin-blogtop > div:nth-child(5) > article:nth-child(${articleListIndex})`;
+            existArtcilePath = `div.l-content-main.l-content-margin-blogtop > div:nth-child(5) > article:nth-child(${articleListIndex})`;
             existArtcile = await page.$(existArtcilePath);
             console.log("後半の記事を確認するよ");
         }
@@ -181,8 +177,7 @@ async function scrapeTopListPage(page, output) {
                 waitUntil: "domcontentloaded"
             }),
             page.click(existArtcilePath)
-
-        ])
+        ]);
 
         // 詳細ページを解析する
         await scrapeDetailPage(page, article);
@@ -194,14 +189,14 @@ async function scrapeTopListPage(page, output) {
     }
 
     // ページを見込みを待って次のページに遷移する
-    console.log('ページ遷移します');
+    console.log("ページ遷移します");
     await page.waitFor(1000);
     await Promise.all([
         page.waitForNavigation({
             waitUntil: "domcontentloaded"
         }),
         page.click("div.l-pagenation > div.l-pagenation-more > a")
-    ])
+    ]);
 }
 
 // 下層の記事を取得する
@@ -223,9 +218,8 @@ async function scrapeListPage(page, output) {
             hatenaBCount: null
         };
 
-        const existArtcilePath =
-            `div.l-content-main.l-content-main-archive > div.articlelist > article:nth-child(${articleListIndex})`;
-        await page.waitFor(1000)
+        const existArtcilePath = `div.l-content-main.l-content-main-archive > div.articlelist > article:nth-child(${articleListIndex})`;
+        await page.waitFor(1000);
         let existArtcile = await page.$(existArtcilePath);
 
         if (existArtcile) {
@@ -256,8 +250,8 @@ async function scrapeListPage(page, output) {
                 waitUntil: "domcontentloaded"
             }),
             page.click(existArtcilePath)
-        ])
-        console.log(`1秒待って記事をクリックする`)
+        ]);
+        console.log(`1秒待って記事をクリックする`);
 
         // 詳細ページを解析する
         await scrapeDetailPage(page, article);
@@ -278,7 +272,7 @@ async function scrapeListPage(page, output) {
                 waitUntil: "domcontentloaded"
             }),
             page.click("div.l-pagenation > div.l-pagenation-more > a")
-        ])
+        ]);
         await scrapeListPage(page, output);
         return;
     }
@@ -291,7 +285,7 @@ async function hasArticleCombined(page) {
 
 // 詳細ページを解析する
 async function scrapeDetailPage(page, article) {
-    console.log('scrapeDetailPage');
+    console.log("scrapeDetailPage");
     // ページタイトルを取得
     article.title = await page.title();
 
@@ -299,31 +293,30 @@ async function scrapeDetailPage(page, article) {
     article.url = await page.url();
 
     // 投稿日を取得
-    await page.waitForSelector(
-        `div.single-header-content-date`, {
-            visible: true
-        });
+    await page.waitForSelector(`div.single-header-content-date`, {
+        visible: true
+    });
     article.postDate = await page.$eval(
         `div.single-header-content-date`,
         el => el.innerText
     );
 
     // 投稿者を取得
-    await page.waitForSelector(
-        `span.author-name`, {
-            visible: true
-        });
+    await page.waitForSelector(`span.author-name`, {
+        visible: true
+    });
     article.author = await page.$eval(`span.author-name`, el => el.innerText);
 
     let categories = null;
     // カテゴリが存在しないことも稀にある
-    if (await page.$('div.single-header-content-labels')) {
-        categories = await page.$eval( // カテゴリを取得
+    if (await page.$("div.single-header-content-labels")) {
+        categories = await page.$eval(
+            // カテゴリを取得
             `div.single-header-content-labels`,
             el => el.innerText
         );
         // 改行コードをセミコロンに置き換える
-        article.categories = categories.replace(/\n/g, ';');
+        article.categories = categories.replace(/\n/g, ";");
     }
 
     // いいね数を取得
@@ -345,9 +338,10 @@ async function getFacebookGoodNum(page) {
 
     // facebookのshareボタンのIframeのsrc属性を取得
     await page.waitForSelector(
-        'div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe', {
+        "div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe", {
             visible: true
-        });
+        }
+    );
     const facebookIframeURL = await page.$eval(
         `div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe`,
         el => el.src
@@ -359,10 +353,9 @@ async function getFacebookGoodNum(page) {
     });
 
     // いいね数を取得
-    await page.waitForSelector(
-        `span#u_0_1`, {
-            visible: true
-        });
+    await page.waitForSelector(`span#u_0_1`, {
+        visible: true
+    });
     const goodNum = await page.$eval(`span#u_0_1`, el => el.innerText);
 
     // 記事に戻る
@@ -378,7 +371,8 @@ async function getTwitterFavNum(page) {
     await page.waitForSelector(
         `li.single-footer-share-item.single-footer-share-item-twitter > iframe`, {
             visible: true
-        });
+        }
+    );
     const twitterIframeURL = await page.$eval(
         `li.single-footer-share-item.single-footer-share-item-twitter > iframe`,
         el => el.src
@@ -390,10 +384,9 @@ async function getTwitterFavNum(page) {
     });
 
     // つぶやき数を取得
-    await page.waitForSelector(
-        `a#count`, {
-            visible: true
-        });
+    await page.waitForSelector(`a#count`, {
+        visible: true
+    });
     const favNum = await page.$eval(`a#count`, el => el.innerText);
 
     // 記事に戻る
@@ -416,15 +409,11 @@ async function getBookmarkNum(page) {
     } catch (error) {
         console.error(error);
         return -1
-
-
-
-
     }
 }
 
 // CSVファイルを出力する
-function exportCsvFile(input) {
+function exportCsvFile(input, title) {
     // ヘッダーを設定
     const columns = {
         title: "タイトル",
@@ -439,12 +428,17 @@ function exportCsvFile(input) {
     };
 
     // shift-jisでcsvに出力
-    csv.stringify(input, {
-        header: true,
-        columns: columns
-    }, function (err, output) {
-        buf = iconv.encode(output, 'shift-jis');
-        fs.writeFileSync('output.csv', buf);
-    });
-    console.log('取得した記事をcsv出力しました')
+    csv.stringify(
+        input, {
+            header: true,
+            columns: columns
+        },
+        function (err, output) {
+            buf = iconv.encode(output, "shift-jis");
+            let now = moment().format('YYYY-MM-DD HH:mm');
+            // title = title.replace(/\//g, '_');
+            fs.writeFileSync(`${now}_${title}_output.csv`, buf);
+        }
+    );
+    console.log("取得した記事をcsv出力しました");
 }
