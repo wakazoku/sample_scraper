@@ -25,7 +25,7 @@ const axios = require('axios');
 
     const browser = await puppeteer.launch({
         headless: true,
-        args: ["--lang=ja,en-US,en"]
+        args: ['--lang=ja,en-US,en','--no-sandbox','--disable-setuid-sandbox']
     });
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(180000); // 不安定なのでたっぷり3分間タイムアウトを待つ
