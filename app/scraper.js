@@ -24,15 +24,17 @@ const axios = require('axios');
     });
 
     const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--lang=ja,en-US,en','--no-sandbox','--disable-setuid-sandbox']
+        headless: false, // trueにするとヘッドレスモードになる
+        args: ['--lang=ja,en-US,en'
+            // ,'--no-sandbox', '--disable-setuid-sandbox'　// EC2で動かす場合は必要
+        ]
     });
     const page = await browser.newPage();
     page.setDefaultNavigationTimeout(180000); // 不安定なのでたっぷり3分間タイムアウトを待つ
 
     // スクレイピング先に遷移
     await page.goto("https://liginc.co.jp/blog/", {
-        waitUntil: "networkidle2"
+        waitUntil: "domcontentloaded"
     });
     await page.waitFor(1000);
 
@@ -41,11 +43,11 @@ const axios = require('axios');
         await scrapeTopListPage(page, output);
         await scrapeListPage(page, output);
     } catch (e) {
-        conso.error("エラー発生ページ: " + await page.url())
-        console.error(e);
+        console.log("エラー発生ページ: " + await page.url())
+        console.log(e);
     } finally {
         // csv出力する
-        exportCsvFile(output, await page.url());
+        exportCsvFile(output);
 
         // ブラウザを終了する
         await browser.close();
@@ -293,19 +295,17 @@ async function scrapeDetailPage(page, article) {
     article.url = await page.url();
 
     // 投稿日を取得
-    await page.waitForSelector(`div.single-header-content-date`, {
-        visible: true
-    });
-    article.postDate = await page.$eval(
-        `div.single-header-content-date`,
-        el => el.innerText
-    );
+    if (await page.$(`div.single-header-content-date`)) {
+        article.postDate = await page.$eval(
+            `div.single-header-content-date`,
+            el => el.innerText
+        );
+    }
 
     // 投稿者を取得
-    await page.waitForSelector(`span.author-name`, {
-        visible: true
-    });
-    article.author = await page.$eval(`span.author-name`, el => el.innerText);
+    if (await page.$(`span.author-name`)) {
+        article.author = await page.$eval(`span.author-name`, el => el.innerText);
+    }
 
     let categories = null;
     // カテゴリが存在しないことも稀にある
@@ -336,6 +336,9 @@ async function scrapeDetailPage(page, article) {
 async function getFacebookGoodNum(page) {
     await page.waitFor(1000);
 
+    // 存在チェック
+    if (!await page.$(`div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe`)) return -1;
+
     // facebookのshareボタンのIframeのsrc属性を取得
     await page.waitForSelector(
         "div.single-footer-share.single-footer-share-margin > ul > li:nth-child(2) > div > span > iframe", {
@@ -349,7 +352,7 @@ async function getFacebookGoodNum(page) {
 
     // iframeを開く
     await page.goto(facebookIframeURL, {
-        waitUntil: "networkidle2"
+        waitUntil: "domcontentloaded"
     });
 
     // いいね数を取得
@@ -367,12 +370,10 @@ async function getFacebookGoodNum(page) {
 // Twitterのツイート数を取得する
 async function getTwitterFavNum(page) {
     await page.waitFor(1000);
+    // 存在チェック
+    if (!await page.$(`li.single-footer-share-item.single-footer-share-item-twitter > iframe`)) return -1;
+
     // twitterのshareボタンのIframeのsrc属性を取得
-    await page.waitForSelector(
-        `li.single-footer-share-item.single-footer-share-item-twitter > iframe`, {
-            visible: true
-        }
-    );
     const twitterIframeURL = await page.$eval(
         `li.single-footer-share-item.single-footer-share-item-twitter > iframe`,
         el => el.src
@@ -380,13 +381,16 @@ async function getTwitterFavNum(page) {
 
     // iframeを開く
     await page.goto(twitterIframeURL, {
-        waitUntil: "networkidle2"
+        waitUntil: "domcontentloaded"
     });
 
+    // 存在チェック
+    if (!await page.$(`a#count`)) {
+        await page.goBack(1000);
+        return -1;
+    }
+
     // つぶやき数を取得
-    await page.waitForSelector(`a#count`, {
-        visible: true
-    });
     const favNum = await page.$eval(`a#count`, el => el.innerText);
 
     // 記事に戻る
@@ -407,13 +411,13 @@ async function getBookmarkNum(page) {
         const res = await axios.get(`http://api.b.st-hatena.com/entry.total_count?url=${articleUrl}`);
         return res.data.total_bookmarks;
     } catch (error) {
-        console.error(error);
+        console.log(error);
         return -1
     }
 }
 
 // CSVファイルを出力する
-function exportCsvFile(input, title) {
+function exportCsvFile(input) {
     // ヘッダーを設定
     const columns = {
         title: "タイトル",
@@ -435,9 +439,8 @@ function exportCsvFile(input, title) {
         },
         function (err, output) {
             buf = iconv.encode(output, "shift-jis");
-            let now = moment().format('YYYY-MM-DD HH:mm');
-            // title = title.replace(/\//g, '_');
-            fs.writeFileSync(`${now}_${title}_output.csv`, buf);
+            let now = moment().format('YYYYMMDDHHmm');
+            fs.writeFileSync(`${now}_output.csv`, buf);
         }
     );
     console.log("取得した記事をcsv出力しました");
