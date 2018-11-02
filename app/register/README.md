@@ -46,7 +46,7 @@ $ docker-compose environment/docker-compose.yml --build
 #### 3. 接続テスト
 ##### ・Adminerに接続出来るか確認  
 [http://0.0.0.0:8080/](http://0.0.0.0:8080/)  
-※接続情報は```app/register/environment/docker-compose.yml```を参照のこと
+※接続情報は```environment/docker-compose.yml```を参照のこと
 
 
 ##### ・MySQLに接続出来るか確認
