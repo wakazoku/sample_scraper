@@ -24,8 +24,8 @@ $ npm i
 $ npx nodemon
 ```
 
-#### 3. 接続テスト
-json型が返ってくれば成功。  
+#### 3. 接続テスト
+json型が返ってくれば成功。  
 [http://localhost:3000/register](http://localhost:3000/register)
 
 ### ●MySQL
@@ -38,12 +38,12 @@ $ mkdir environment/db-data
 ```
 
 #### 2. Docker Compsoseを起動
-※ご自身のホスト端末上でDocker環境を整えてから実行して下さい。
+※ご自身のホスト端末上でDocker環境を整えてから実行して下さい。
 ```bash
 $ docker-compose environment/docker-compose.yml --build
 ```
 
-#### 3. 接続テスト
+#### 3. 接続テスト
 ##### ・Adminerに接続出来るか確認  
 [http://0.0.0.0:8080/](http://0.0.0.0:8080/)  
 ※接続情報は```app/register/environment/docker-compose.yml```を参照のこと
@@ -54,4 +54,4 @@ $ docker-compose environment/docker-compose.yml --build
 $ node sample/dbConnectionTest.js
 ```
 
-```The solution is:  2```がコンソールに表示されれば接続出来ている。
+```The solution is:  2```がコンソールに表示されれば接続出来ている。
