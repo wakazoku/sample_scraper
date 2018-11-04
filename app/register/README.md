@@ -2,23 +2,23 @@
 
 ## ▼ 概要
 
-[Scraper](../scraper/README.md)で取得した記事を MySQL に登録する。  
+[Scraper](../scraper/README.md)で取得した記事をMySQLに登録します。  
 構成は Express + MySQL + Sequelize。
 
 ## ▼ ローカル環境構築
 
 ### ●Express
 
-#### 1. npm インストールする
-カレントディレクトリで依存ライブラリをインストールする。
+#### 1. npm インストール
+カレントディレクトリで依存ライブラリをインストールします。
 
 ```node.js
 $ npm i
 ```
 
-#### 2. サーバーを起動する
+#### 2. サーバーを起動
 [nodemon](https://github.com/remy/nodemon#nodemon)を使用することでホットリロードに対応。  
-下記コマンドでサーバー起動する。
+下記コマンドでサーバーを起動します。
 
 ```node.js
 $ npx nodemon
@@ -31,7 +31,7 @@ json 型が返ってくれば成功。
 ### ●MySQL
 
 #### 1. db-data フォルダを作成
-`environment`直下に`db-data`フォルダを作成する
+`environment`直下に`db-data`フォルダを作成します。
 
 ```bash
 $ mkdir environment/db-data
@@ -55,23 +55,24 @@ $ docker-compose -f environment/docker-compose.yml --build
 $ node sample/dbConnectionTest.js
 ```
 
-`The solution is: 2`がコンソールに表示されれば接続出来ている。
+`The solution is: 2`がコンソールに表示されれば接続出来てます。
 
 ### ●Seaqlize
 #### 1. マイグレーション
-マイグレーションコマンドを実行し、テーブルを作成する。
+マイグレーションコマンドを実行し、テーブルを作成します。
 
 ```
 $ node_modules/.bin/sequelize db:migrate
 ```
 
-##### 2. 初期データを登録
-Adminerとかで`development` データベースで下記クエリを実行する
+#### 2. シーディング
+シードファイルを実行し、初期データを登録します。
 
 ```
-INSERT INTO `Users` (`id`, `firstName`, `lastName`, `email`, `createdAt`, `updatedAt`)
-VALUES ('1', 'テスト', '太郎', 'wakatabi@mail.com', now(), now());
+node_modules/.bin/sequelize db:seed:all
 ```
 
-##### 3. モデルからデータが取得できるか確認
-[http://localhost:3000/users/test](http://localhost:3000/users/test)
+#### 3. モデルからデータが取得できるか確認
+Usersテーブルの一覧が表示されます。  
+[http://localhost:3000/users/test](http://localhost:3000/users/test)  
+

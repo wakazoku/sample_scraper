@@ -7,7 +7,7 @@ router.get('/', function (req, res, next) {
   res.send('respond with a resource');
 });
 router.get('/test', function (req, res, next) {
-  models.User.findById(1).then(users => {
+  models.User.all().then(users => {
     res.send(users);
   })
 });
