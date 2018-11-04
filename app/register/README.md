@@ -2,7 +2,7 @@
 
 ## ▼概要
 
-[Scraper](../scraper/README.md)で取得した記事をMySQLに登録する。  
+[Scraper](../scraper/README.md)で取得した記事をMySQLに登録する。
 構成は Express + MySQL + Sequelize。
 
 ## ▼ローカル環境構築
@@ -17,7 +17,7 @@ $ npm i
 ```
 
 #### 2. サーバーを起動する
-[nodemon](https://github.com/remy/nodemon#nodemon)を使用することでホットリロードに対応。  
+[nodemon](https://github.com/remy/nodemon#nodemon)を使用することでホットリロードに対応。
 下記コマンドでサーバー起動する。
 
 ```node.js
@@ -25,7 +25,7 @@ $ npx nodemon
 ```
 
 #### 3. 接続テスト
-json型が返ってくれば成功。  
+json型が返ってくれば成功。
 [http://localhost:3000/register](http://localhost:3000/register)
 
 ### ●MySQL
@@ -40,12 +40,12 @@ $ mkdir environment/db-data
 #### 2. Docker Compsoseを起動
 ※ご自身のホスト端末上でDocker環境を整えてから実行して下さい。
 ```bash
-$ docker-compose environment/docker-compose.yml --build
+$ docker-compose -f environment/docker-compose.yml --build
 ```
 
 #### 3. 接続テスト
-##### ・Adminerに接続出来るか確認  
-[http://0.0.0.0:8080/](http://0.0.0.0:8080/)  
+##### ・Adminerに接続出来るか確認
+[http://0.0.0.0:8080/](http://0.0.0.0:8080/)
 ※接続情報は```environment/docker-compose.yml```を参照のこと
 
 
