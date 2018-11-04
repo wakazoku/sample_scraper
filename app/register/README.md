@@ -25,7 +25,7 @@ $ npx nodemon
 ```
 
 #### 3. 接続テスト
-json 型が返ってくれば成功。
+json 型が返ってくれば成功。  
 [http://localhost:3000/register](http://localhost:3000/register)
 
 ### ●MySQL
