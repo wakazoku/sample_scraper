@@ -1,11 +1,11 @@
 # Register
 
-## ▼概要
+## ▼ 概要
 
-[Scraper](../scraper/README.md)で取得した記事をMySQLに登録する。
+[Scraper](../scraper/README.md)で取得した記事を MySQL に登録する。  
 構成は Express + MySQL + Sequelize。
 
-## ▼ローカル環境構築
+## ▼ ローカル環境構築
 
 ### ●Express
 
@@ -17,7 +17,7 @@ $ npm i
 ```
 
 #### 2. サーバーを起動する
-[nodemon](https://github.com/remy/nodemon#nodemon)を使用することでホットリロードに対応。
+[nodemon](https://github.com/remy/nodemon#nodemon)を使用することでホットリロードに対応。  
 下記コマンドでサーバー起動する。
 
 ```node.js
@@ -25,33 +25,53 @@ $ npx nodemon
 ```
 
 #### 3. 接続テスト
-json型が返ってくれば成功。
+json 型が返ってくれば成功。
 [http://localhost:3000/register](http://localhost:3000/register)
 
 ### ●MySQL
 
-#### 1. db-dataフォルダを作成
-```environment```直下に```db-data```フォルダを作成する
+#### 1. db-data フォルダを作成
+`environment`直下に`db-data`フォルダを作成する
 
 ```bash
 $ mkdir environment/db-data
 ```
 
-#### 2. Docker Compsoseを起動
-※ご自身のホスト端末上でDocker環境を整えてから実行して下さい。
+#### 2. Docker Compsose を起動
+ご自身のホスト端末上で Docker 環境を整えてから実行して下さい。
+
 ```bash
 $ docker-compose -f environment/docker-compose.yml --build
 ```
+※[この記事](https://qiita.com/muff1225/items/48e0753e7b745ec3ecbd)を参考にDockerfile化しました。
 
 #### 3. 接続テスト
-##### ・Adminerに接続出来るか確認
-[http://0.0.0.0:8080/](http://0.0.0.0:8080/)
-※接続情報は```environment/docker-compose.yml```を参照のこと
+##### ・Adminer に接続出来るか確認
+[http://0.0.0.0:8080/](http://0.0.0.0:8080/)  
+※接続情報は`environment/docker-compose.yml`を参照のこと
 
-
-##### ・MySQLに接続出来るか確認
+##### ・MySQL に接続出来るか確認
 ```
 $ node sample/dbConnectionTest.js
 ```
 
-```The solution is:  2```がコンソールに表示されれば接続出来ている。
+`The solution is: 2`がコンソールに表示されれば接続出来ている。
+
+### ●Seaqlize
+#### 1. マイグレーション
+マイグレーションコマンドを実行し、テーブルを作成する。
+
+```
+$ node_modules/.bin/sequelize db:migrate
+```
+
+##### 2. 初期データを登録
+Adminerとかで`development` データベースで下記クエリを実行する
+
+```
+INSERT INTO `Users` (`id`, `firstName`, `lastName`, `email`, `createdAt`, `updatedAt`)
+VALUES ('1', 'テスト', '太郎', 'wakatabi@mail.com', now(), now());
+```
+
+##### 3. モデルからデータが取得できるか確認
+[http://localhost:3000/users/test](http://localhost:3000/users/test)
