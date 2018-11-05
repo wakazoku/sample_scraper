@@ -7,14 +7,21 @@ module.exports = (sequelize, DataTypes) => {
     post_date: DataTypes.DATE,
     post_url: DataTypes.STRING,
     author: DataTypes.STRING,
-    categories: DataTypes.STRING
-  }, { underscored: true });
+    categories: DataTypes.STRING,
+  }, { underscored: true, createdAt: 'createdAt', updatedAt: 'updatedAt', });
   Article.associate = function (models) {
-    // associations can be defined here
-    Article.belongsTo(models.Target, { "foreignKey": "id" });
-    Article.hasOne(models.Twitter, { "foreignKey": "article_id" });
-    Article.hasOne(models.Facebook, { "foreignKey": "article_id" });
-    Article.hasOne(models.Hatena, { "foreignKey": "article_id" });
+    // Article.belongsTo(models.Target, {
+    //   targetKey: "target_id", foreignKey: "id"
+    // });
+    Article.hasOne(models.Twitter, {
+      targetKey: "id", foreignKey: "article_id"
+    });
+    Article.hasOne(models.Facebook, {
+      targetKey: "id", foreignKey: "article_id"
+    });
+    Article.hasOne(models.Hatena, {
+      targetKey: "id", foreignKey: "article_id"
+    });
   };
   return Article;
 };

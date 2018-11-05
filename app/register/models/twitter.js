@@ -3,10 +3,11 @@ module.exports = (sequelize, DataTypes) => {
   const Twitter = sequelize.define('Twitter', {
     article_id: DataTypes.INTEGER,
     count: DataTypes.INTEGER
-  }, { underscored: true });
+  }, { underscored: true, createdAt: 'createdAt', updatedAt: 'updatedAt', });
   Twitter.associate = function (models) {
-    // associations can be defined here
-    Twitter.hasOne(models.Article, { "foreignKey": "id" });
+    Twitter.hasOne(models.Article, {
+      targetKey: "article_id", foreignKey: "id"
+    });
   };
   return Twitter;
 };

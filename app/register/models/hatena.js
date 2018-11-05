@@ -3,10 +3,11 @@ module.exports = (sequelize, DataTypes) => {
   const Hatena = sequelize.define('Hatena', {
     article_id: DataTypes.INTEGER,
     count: DataTypes.INTEGER
-  }, { underscored: true });
+  }, { underscored: true, createdAt: 'createdAt', updatedAt: 'updatedAt', });
   Hatena.associate = function (models) {
-    // associations can be defined here
-    Hatena.hasOne(models.Article, { "foreignKey": "id" });
+    Hatena.hasOne(models.Article, {
+      targetKey: "article_id", foreignKey: "id"
+    });
   };
   return Hatena;
 };
