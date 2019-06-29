@@ -3,7 +3,8 @@
 ## ▼概要
 
 HeadlessChromeのライブラリ、[Puppeteer](https://github.com/GoogleChrome/puppeteer)を使ったスクレイパー。  
-取得した記事は[Register](../register/README.md)を介してDB登録する。
+取得した記事は[Register](../register/README.md)を介してDB登録する。  
+※Registerは未完成。現状はScraperで対象ページからスクレイピングした情報をCSV出力する。
 
 ## ▼注意事項
 スクレイパーを起動する際は以下の注意点をご自身の目で確認し、スクレイピング対象ページに迷惑をかけないようにしてください。
