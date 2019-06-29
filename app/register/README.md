@@ -4,6 +4,7 @@
 
 [Scraper](../scraper/README.md)で取得した記事をMySQLに登録します。  
 構成は Express + MySQL + Sequelize。
+※未完成。Scraperで取得した情報をAPI経由でRegisterを呼び出し、DB保存する予定。
 
 ## ▼ ローカル環境構築
 
