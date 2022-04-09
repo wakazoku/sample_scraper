@@ -21,7 +21,7 @@
     "csv": "^4.0.0",
     "fs": "0.0.1-security",
     "iconv-lite": "^0.4.24",
-    "moment": "^2.22.2",
+    "moment": "^2.29.2",
     "puppeteer": "^1.9.0"
   }
 }
